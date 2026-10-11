@@ -1,61 +1,58 @@
 #include <stdio.h>
-#include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_log.h"
 
-static const char *TAG = "matrix_calc";
+#define ROWS 2
+#define COLS 2
 
-void print_matrix(const char* name, float mat[2][2]) {
-    printf("%s:\n", name);
-    printf("[%7.2f, %7.2f]\n", mat[0][0], mat[0][1]);
-    printf("[%7.2f, %7.2f]\n\n", mat[1][0], mat[1][1]);
-}
-
-void read_serial_line(char* buffer, size_t max_len) {
-    if (fgets(buffer, max_len, stdin) != NULL) {
-        buffer[strcspn(buffer, "\r")] = 0;
-        buffer[strcspn(buffer, "\n")] = 0;
-        if (strlen(buffer) > 0) {
-            return;
+// Función para restar dos matrices
+void subtractMatrices(int mat1[ROWS][COLS], int mat2[ROWS][COLS], int res[ROWS][COLS]) {
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            res[i][j] = mat1[i][j] - mat2[i][j];
         }
     }
-    vTaskDelay(pdMS_TO_TICKS(50));
+}
+
+// Función para imprimir una matriz en la consola serial
+void printMatrix(int mat[ROWS][COLS]) {
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            printf("%d \t", mat[i][j]);
+        }
+        printf("\n");
+    }
 }
 
 void app_main(void) {
-    char rx_buffer[128];
-    float A[2][2], B[2][2], Res[2][2];
+    vTaskDelay(pdMS_TO_TICKS(2000));
+    
+    printf("\n--- Operacion de Resta de Matrices en ESP32 ---\n");
 
-    ESP_LOGI(TAG, "Operaciones Matriciales");
+    int A[ROWS][COLS] = {
+        {10, 20},
+        {30, 40}
+    };
 
-    while (true) {
-        printf("A? a11 a12 a21 a22:\n");
-        read_serial_line(rx_buffer, sizeof(rx_buffer));
-        if (sscanf(rx_buffer, "%f %f %f %f", &A[0][0], &A[0][1], &A[1][0], &A[1][1]) != 4) {
-            printf("Error.\n\n");
-            continue;
-        }
+    int B[ROWS][COLS] = {
+        {2, 4},
+        {6, 8}
+    };
 
-        printf("B? b11 b12 b21 b22:\n");
-        read_serial_line(rx_buffer, sizeof(rx_buffer));
-        if (sscanf(rx_buffer, "%f %f %f %f", &B[0][0], &B[0][1], &B[1][0], &B[1][1]) != 4) {
-            printf("Error.\n\n");
-            continue;
-        }
+    int resultado[ROWS][COLS];
 
-        printf("\n--- MATRICES ---\n");
-        print_matrix("Matrix A", A);
-        print_matrix("Matrix B", B);
-        printf("--- RESULTS ---\n");
+    subtractMatrices(A, B, resultado);
 
-        // 1. Suma (A + B)
-        Res[0][0] = A[0][0] + B[0][0];
-        Res[0][1] = A[0][1] + B[0][1];
-        Res[1][0] = A[1][0] + B[1][0];
-        Res[1][1] = A[1][1] + B[1][1];
+    printf("Matriz A:\n");
+    printMatrix(A);
 
-        print_matrix("Addition (A + B)", Res);
-        printf("=========================\n\n");
+    printf("Matriz B:\n");
+    printMatrix(B);
+
+    printf("Resultado de la Resta (A - B):\n");
+    printMatrix(resultado);
+
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
